@@ -1,3 +1,6 @@
+<img width="1182" height="1072" alt="image" src="https://github.com/user-attachments/assets/712e7e6f-e870-4bb5-b379-1490f59b5243" />
+
+
 ## 다운로드
 
 ### Windows
