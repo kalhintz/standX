@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STANDX Trading Bot</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 헤더 -->
+    <header class="header">
+      <h1>🚀 STANDX Trading Bot</h1>
+      <div class="connection-status">
+        <span id="status-indicator" class="status-indicator disconnected"></span>
+        <span id="status-text">연결 안됨</span>
+      </div>
+    </header>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="main-content">
+      <!-- 사이드바 -->
+      <aside class="sidebar">
+        <nav class="nav-menu">
+          <button class="nav-btn active" data-tab="dashboard">
+            📊 대시보드
+          </button>
+          <button class="nav-btn" data-tab="positions">
+            📈 포지션 관리
+          </button>
+          <button class="nav-btn" data-tab="volume-bot">
+            🔄 거래량 봇
+          </button>
+          <button class="nav-btn" data-tab="token-swap">
+            💱 토큰 스왑
+          </button>
+          <button class="nav-btn" data-tab="manual-trade">
+            ⚡ 수동 거래
+          </button>
+          <button class="nav-btn" data-tab="settings">
+            ⚙️ 설정
+          </button>
+        </nav>
+
+        <!-- 계정 정보 -->
+        <div class="account-info">
+          <h3>계정 정보</h3>
+          <div class="balance-display">
+            <div class="balance-item">
+              <span>Balance:</span>
+              <span id="total-balance" class="value">-</span>
+            </div>
+            <div class="balance-item">
+              <span>Available:</span>
+              <span id="available-balance" class="value">-</span>
+            </div>
+            <div class="balance-item">
+              <span>Equity:</span>
+              <span id="equity-balance" class="value">-</span>
+            </div>
+            <div class="balance-item">
+              <span>uPNL:</span>
+              <span id="upnl-balance" class="value">-</span>
+            </div>
+          </div>
+
+          <!-- 포인트 정보 -->
+          <div class="points-display">
+            <h4>🎯 포인트</h4>
+            <div class="balance-item">
+              <span>Total:</span>
+              <span id="total-points" class="value points">-</span>
+            </div>
+            <div class="balance-item">
+              <span>Swap:</span>
+              <span id="swap-points" class="value">-</span>
+            </div>
+            <div class="balance-item">
+              <span>DUSD:</span>
+              <span id="dusd-points" class="value">-</span>
+            </div>
+            <div class="balance-item">
+              <span>Rank:</span>
+              <span id="rank" class="value">#-</span>
+            </div>
+          </div>
+
+          <button id="refresh-balance" class="btn btn-small">🔄 새로고침</button>
+        </div>
+      </aside>
+
+      <!-- 메인 패널 -->
+      <main class="main-panel">
+        <!-- 대시보드 탭 -->
+        <section id="dashboard" class="tab-content active">
+          <h2>대시보드</h2>
+
+          <!-- 봇 상태 카드 -->
+          <div class="cards-grid">
+            <div class="card">
+              <h3>거래량 봇 상태</h3>
+              <div class="status-display">
+                <span id="volume-bot-status" class="status-badge stopped">중지됨</span>
+              </div>
+              <div class="stats">
+                <div class="stat-item">
+                  <span>총 주문:</span>
+                  <span id="volume-total-orders">0</span>
+                </div>
+                <div class="stat-item">
+                  <span>성공:</span>
+                  <span id="volume-successful-orders" class="success">0</span>
+                </div>
+                <div class="stat-item">
+                  <span>실패:</span>
+                  <span id="volume-failed-orders" class="error">0</span>
+                </div>
+                <div class="stat-item">
+                  <span>총 거래량:</span>
+                  <span id="volume-total-volume">0</span>
+                </div>
+                <div class="stat-item">
+                  <span>실행 시간:</span>
+                  <span id="volume-runtime">0s</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>현재 포지션</h3>
+              <div id="positions-list" class="positions-list">
+                <p class="empty-state">포지션 없음</p>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>오픈 오더</h3>
+              <div id="orders-list" class="orders-list">
+                <p class="empty-state">오픈 오더 없음</p>
+              </div>
+              <button id="cancel-all-orders" class="btn btn-small btn-danger">❌ 모든 주문 취소</button>
+            </div>
+          </div>
+
+          <!-- 로그 -->
+          <div class="card log-card">
+            <h3>활동 로그</h3>
+            <div id="activity-log" class="activity-log"></div>
+          </div>
+        </section>
+
+        <!-- 포지션 관리 탭 -->
+        <section id="positions" class="tab-content">
+          <h2>📈 포지션 관리</h2>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <h3>보유 포지션</h3>
+              <button id="refresh-positions" class="btn btn-small">🔄 새로고침</button>
+            </div>
+            <div id="positions-detail" class="positions-detail">
+              <p class="empty-state">포지션 없음</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 거래량 봇 탭 -->
+        <section id="volume-bot" class="tab-content">
+          <h2>🔄 거래량 봇</h2>
+
+          <div class="card">
+            <h3>봇 설정</h3>
+            <form id="volume-bot-form" class="form">
+              <div class="form-group">
+                <label for="volume-symbol">거래 페어:</label>
+                <input type="text" id="volume-symbol" value="BTC-USD" placeholder="예: BTC-USD">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="volume-min-size">최소 수량:</label>
+                  <input type="number" id="volume-min-size" value="0.0001" step="0.0001" min="0.0001">
+                </div>
+                <div class="form-group">
+                  <label for="volume-max-size">최대 수량:</label>
+                  <input type="number" id="volume-max-size" value="0.001" step="0.0001" min="0.0001">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="volume-interval-min">최소 간격 (초):</label>
+                  <input type="number" id="volume-interval-min" value="15" min="1">
+                </div>
+                <div class="form-group">
+                  <label for="volume-interval-max">최대 간격 (초):</label>
+                  <input type="number" id="volume-interval-max" value="45" min="1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="volume-price-variance">가격 변동폭 (%):</label>
+                <input type="number" id="volume-price-variance" value="0.1" step="0.1" min="0">
+              </div>
+
+              <div class="form-actions">
+                <button type="button" id="start-volume-bot" class="btn btn-success">▶️ 시작</button>
+                <button type="button" id="stop-volume-bot" class="btn btn-danger">⏹️ 중지</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>📊 실시간 통계</h3>
+            <div class="stats-grid">
+              <div class="stat-box">
+                <div class="stat-label">총 주문 수</div>
+                <div class="stat-value" id="vb-total-orders">0</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">성공률</div>
+                <div class="stat-value" id="vb-success-rate">0%</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">총 거래량</div>
+                <div class="stat-value" id="vb-total-volume">0</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">실행 시간</div>
+                <div class="stat-value" id="vb-runtime">0분</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 토큰 스왑 탭 -->
+        <section id="token-swap" class="tab-content">
+          <h2>💱 토큰 스왑</h2>
+
+          <!-- 토큰 잔고 표시 -->
+          <div class="card">
+            <h3>토큰 잔고</h3>
+            <div class="token-balances">
+              <div class="token-balance-item">
+                <div class="token-info">
+                  <span class="token-symbol">DUSD</span>
+                  <span class="token-name">StandX DUSD</span>
+                </div>
+                <div class="token-balance">
+                  <span id="dusd-balance">-</span>
+                </div>
+              </div>
+              <div class="token-balance-item">
+                <div class="token-info">
+                  <span class="token-symbol">USDT</span>
+                  <span class="token-name">Tether USD</span>
+                </div>
+                <div class="token-balance">
+                  <span id="usdt-balance">-</span>
+                </div>
+              </div>
+            </div>
+            <button id="refresh-token-balances" class="btn btn-small">🔄 잔고 새로고침</button>
+          </div>
+
+          <!-- 스왑 인터페이스 -->
+          <div class="card">
+            <h3>스왑</h3>
+            <div class="swap-interface">
+              <!-- From Token -->
+              <div class="swap-section">
+                <div class="swap-label">
+                  <span>From</span>
+                  <span id="from-balance" class="balance-label">잔고: -</span>
+                </div>
+                <div class="swap-input-group">
+                  <input type="number" id="swap-amount-in" class="swap-input" placeholder="0.0" step="0.01" min="0">
+                  <select id="swap-token-from" class="token-select">
+                    <option value="DUSD">DUSD</option>
+                    <option value="USDT">USDT</option>
+                  </select>
+                </div>
+                <button id="use-max-btn" class="btn btn-small" style="margin-top: 0.5rem;">MAX</button>
+              </div>
+
+              <!-- 스왑 방향 전환 버튼 -->
+              <div class="swap-direction">
+                <button id="reverse-swap" class="btn-icon">🔄</button>
+              </div>
+
+              <!-- To Token -->
+              <div class="swap-section">
+                <div class="swap-label">
+                  <span>To (예상)</span>
+                  <span id="to-balance" class="balance-label">잔고: -</span>
+                </div>
+                <div class="swap-input-group">
+                  <input type="number" id="swap-amount-out" class="swap-input" placeholder="0.0" readonly>
+                  <select id="swap-token-to" class="token-select">
+                    <option value="USDT">USDT</option>
+                    <option value="DUSD">DUSD</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 스왑 정보 -->
+              <div id="swap-info" class="swap-info" style="display: none;">
+                <div class="info-row">
+                  <span>Price Impact:</span>
+                  <span id="price-impact">-</span>
+                </div>
+                <div class="info-row">
+                  <span>Slippage:</span>
+                  <span>0.5%</span>
+                </div>
+                <div class="info-row">
+                  <span>Est. Gas:</span>
+                  <span id="gas-estimate">-</span>
+                </div>
+              </div>
+
+              <!-- 스왑 버튼 -->
+              <button id="execute-swap-btn" class="btn btn-primary btn-large" style="margin-top: 1rem; width: 100%;">
+                💱 스왑 실행
+              </button>
+            </div>
+          </div>
+
+          <!-- 최근 스왑 내역 -->
+          <div class="card">
+            <h3>스왑 내역</h3>
+            <div id="swap-history" class="swap-history">
+              <p class="empty-state">스왑 내역이 없습니다</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 수동 거래 탭 -->
+        <section id="manual-trade" class="tab-content">
+          <h2>⚡ 수동 거래</h2>
+
+          <div class="cards-grid-2">
+            <div class="card">
+              <h3>주문 생성</h3>
+              <form id="manual-order-form" class="form">
+                <div class="form-group">
+                  <label for="trade-symbol">거래 페어:</label>
+                  <input type="text" id="trade-symbol" value="BTC-USD" placeholder="예: BTC-USD">
+                </div>
+
+                <div class="form-group">
+                  <label for="trade-side">방향:</label>
+                  <select id="trade-side">
+                    <option value="buy">매수 (Long)</option>
+                    <option value="sell">매도 (Short)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="trade-type">주문 타입:</label>
+                  <select id="trade-type">
+                    <option value="limit">지정가</option>
+                    <option value="market">시장가</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="trade-size">수량:</label>
+                  <input type="number" id="trade-size" value="0.0001" step="0.0001" min="0.0001">
+                </div>
+
+                <div class="form-group" id="price-group">
+                  <label for="trade-price">가격:</label>
+                  <input type="number" id="trade-price" value="" step="0.01" min="0">
+                </div>
+
+                <div class="form-group">
+                  <label for="trade-leverage">레버리지:</label>
+                  <input type="number" id="trade-leverage" value="10" min="1" max="20">
+                  <button type="button" id="apply-leverage" class="btn btn-small">적용</button>
+                </div>
+
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-success">📤 주문 생성</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="card">
+              <h3>현재 시세</h3>
+              <div id="ticker-info" class="ticker-info">
+                <div class="ticker-item">
+                  <span>Last Price:</span>
+                  <span id="ticker-last">-</span>
+                </div>
+                <div class="ticker-item">
+                  <span>Mark Price:</span>
+                  <span id="ticker-mark">-</span>
+                </div>
+                <div class="ticker-item">
+                  <span>Index Price:</span>
+                  <span id="ticker-index">-</span>
+                </div>
+                <div class="ticker-item">
+                  <span>24h Volume:</span>
+                  <span id="ticker-volume">-</span>
+                </div>
+              </div>
+              <button id="refresh-ticker" class="btn btn-small">🔄 새로고침</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 설정 탭 -->
+        <section id="settings" class="tab-content">
+          <h2>⚙️ 설정</h2>
+
+          <div class="card">
+            <h3>API 설정</h3>
+            <form id="api-settings-form" class="form">
+              <div class="form-group">
+                <label for="chain-select">체인:</label>
+                <select id="chain-select">
+                  <option value="bsc">BSC (Binance Smart Chain)</option>
+                  <option value="solana">Solana</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="wallet-address">Wallet Address:</label>
+                <input type="text" id="wallet-address" placeholder="0x... or solana address">
+              </div>
+
+              <div class="form-group">
+                <label for="private-key">Private Key:</label>
+                <input type="password" id="private-key" placeholder="Private Key (보안 주의!)">
+                <small style="color: #f87171;">⚠️ Private Key는 로컬에만 저장됩니다</small>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="save-credentials" checked>
+                  로그인 정보 저장 (다음에 자동 입력)
+                </label>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" id="connect-api" class="btn btn-primary">🔌 연결</button>
+                <button type="button" id="disconnect-api" class="btn btn-secondary">🔌 연결 해제</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>봇 설정</h3>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="auto-refresh" checked>
+                자동 새로고침 (10초)
+              </label>
+            </div>
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="sound-alerts">
+                소리 알림
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>API 정보</h3>
+            <div class="info-text">
+              <p><strong>Base URL:</strong> https://perps.standx.com</p>
+              <p><strong>Auth URL:</strong> https://api.standx.com</p>
+              <p><strong>인증 방식:</strong> ed25519 + JWT</p>
+              <p><strong>문서:</strong> <a href="https://docs.standx.com" target="_blank">docs.standx.com</a></p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
